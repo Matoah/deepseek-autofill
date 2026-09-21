@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+<div class="container">
+    <h3>自动填充插件</h3>
+
+    <div class="status">
+        <label class="switch">
+            <input type="checkbox" id="toggleSwitch">
+            <span class="slider"></span>
+        </label>
+        <span id="statusText">已启用</span>
+    </div>
+
+    <div class="settings">
+        <h4>当前配置</h4>
+        <div class="config-item">
+            <label>目标网站:</label>
+            <input type="text" id="targetSite" value="chat.deepseek.com">
+        </div>
+        <div class="config-item">
+            <label>参数名:</label>
+            <input type="text" id="paramName" value="q">
+        </div>
+
+        <button id="saveBtn">保存配置</button>
+        <button id="testBtn">手动测试</button>
+    </div>
+
+    <div class="instructions">
+        <h4>使用说明:</h4>
+        <p>访问 <strong>chat.deepseek.com?q=值</strong> 时，会自动将参数值填入textarea并点击提交按钮。</p>
+    </div>
+</div>
+
+<script src="popup.js"></script>
+</body>
+</html>

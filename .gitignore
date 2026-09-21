@@ -1,0 +1,8 @@
+# IDE
+.idea/
+
+# ZCode
+.zcodeignore
+
+# macOS
+.DS_Store

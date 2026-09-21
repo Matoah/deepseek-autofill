@@ -1,0 +1,27 @@
+{
+  "manifest_version": 3,
+  "name": "AI 平台数据自动发送器",
+  "version": "1.0.0",
+  "description": "自动从URL参数中提取值并填充到页面表单并发送，适用Deepseek和ChatGPT，主要对接 Alfred 软件",
+  "author": "Matoah",
+  "permissions": ["activeTab", "scripting", "storage"],
+  "host_permissions": [
+    "http://chat.deepseek.com/*",
+    "https://chat.deepseek.com/*",
+    "https://chatgpt.com/*",
+    "http://chatgpt.com/*"
+  ],
+  "content_scripts": [
+    {
+      "matches": ["*://chat.deepseek.com/*", "*://chatgpt.com/*"],
+      "js": ["content.js"],
+      "run_at": "document_start"
+    }
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "action": {
+    "default_popup": "popup/popup.html"
+  }
+}
