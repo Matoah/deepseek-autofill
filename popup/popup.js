@@ -1,3 +1,7 @@
+// Safari 的扩展API以 browser 命名空间为主（16.4 起也提供 chrome），
+// Chrome/Edge 只有 chrome。统一取可用的那个，保持双浏览器兼容
+const ext = typeof browser !== 'undefined' ? browser : chrome;
+
 document.addEventListener('DOMContentLoaded', function() {
     const toggleSwitch = document.getElementById('toggleSwitch');
     const statusText = document.getElementById('statusText');
@@ -7,7 +11,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const testBtn = document.getElementById('testBtn');
 
     // 加载设置
-    chrome.storage.local.get(
+    ext.storage.local.get(
         ['autoFillEnabled', 'targetWebsite', 'queryParamName'],
         function(result) {
             toggleSwitch.checked = result.autoFillEnabled !== false;
@@ -34,7 +38,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const enabled = this.checked;
         updateStatusText(enabled);
 
-        chrome.runtime.sendMessage({
+        ext.runtime.sendMessage({
             action: 'toggleAutoFill',
             enabled: enabled
         });
@@ -47,7 +51,7 @@ document.addEventListener('DOMContentLoaded', function() {
             queryParamName: paramNameInput.value.trim()
         };
 
-        chrome.storage.local.set(config, function() {
+        ext.storage.local.set(config, function() {
             // 显示保存成功提示
             const originalText = saveBtn.textContent;
             saveBtn.textContent = '✓ 已保存';
@@ -62,12 +66,13 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // 手动测试
     testBtn.addEventListener('click', function() {
-        chrome.tabs.query({ active: true, currentWindow: true }, function(tabs) {
+        ext.tabs.query({ active: true, currentWindow: true }, function(tabs) {
             const currentTab = tabs[0];
 
-            if (currentTab.url.includes('chat.deepseek.com')) {
+            // Safari下未授权站点的tab可能拿不到url，先判空
+            if (currentTab.url && currentTab.url.includes('chat.deepseek.com')) {
                 // 发送消息给content script执行填充
-                chrome.tabs.sendMessage(currentTab.id, {
+                ext.tabs.sendMessage(currentTab.id, {
                     action: 'executeAutoFill'
                 }, function(response) {
                     if (response && response.success) {

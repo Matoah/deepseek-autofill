@@ -6,3 +6,7 @@
 
 # macOS
 .DS_Store
+
+# Safari Xcode 工程构建产物
+safari/*/build/
+xcuserdata/
