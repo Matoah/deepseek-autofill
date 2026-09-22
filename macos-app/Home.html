@@ -1,0 +1,889 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>快问</title>
+    <script>
+      // 在样式应用前根据偏好设置主题类，避免深色用户看到首帧闪白。
+      // window.__themePref 由 Swift 在 document start 注入（light/dark/auto）
+      try {
+        var __p = window.__themePref || "auto";
+        var __dark =
+          __p === "dark" ||
+          (__p === "auto" &&
+            window.matchMedia("(prefers-color-scheme: dark)").matches);
+        if (__dark) document.documentElement.classList.add("theme-dark");
+      } catch (e) {}
+    </script>
+    <style>
+      :root {
+        color-scheme: light;
+        --bg-glow: rgba(77, 107, 254, 0.1);
+        --card: rgba(255, 255, 255, 0.78);
+        --card-hover: rgba(255, 255, 255, 0.98);
+        --border: rgba(38, 38, 92, 0.12);
+        --border-strong: rgba(38, 38, 92, 0.2);
+        --text: #1d1f2e;
+        --text-2: #666a7d;
+        --text-3: #9b9ead;
+        --hover: rgba(38, 38, 92, 0.07);
+        --ring: rgba(77, 107, 254, 0.35);
+        --danger: #e5484d;
+        --shadow:
+          0 1px 2px rgba(38, 38, 92, 0.05), 0 8px 24px rgba(38, 38, 92, 0.08);
+        --menu-shadow:
+          0 4px 10px rgba(38, 38, 92, 0.12), 0 12px 32px rgba(38, 38, 92, 0.16);
+        --menu-bg: rgba(253, 253, 255, 0.85);
+      }
+      :root.theme-dark {
+        color-scheme: dark;
+        --bg-glow: rgba(93, 122, 255, 0.16);
+        --card: rgba(255, 255, 255, 0.055);
+        --card-hover: rgba(255, 255, 255, 0.09);
+        --border: rgba(255, 255, 255, 0.1);
+        --border-strong: rgba(255, 255, 255, 0.22);
+        --text: #f5f5f7;
+        --text-2: #a9a9b2;
+        --text-3: #71717d;
+        --hover: rgba(255, 255, 255, 0.09);
+        --ring: rgba(122, 140, 255, 0.45);
+        --danger: #ff6369;
+        --shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 8px 24px rgba(0, 0, 0, 0.35);
+        --menu-shadow:
+          0 4px 10px rgba(0, 0, 0, 0.4), 0 12px 32px rgba(0, 0, 0, 0.5);
+        --menu-bg: rgba(46, 43, 76, 0.78);
+      }
+
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        height: 100%;
+      }
+      body {
+        font-family:
+          -apple-system, BlinkMacSystemFont, "SF Pro Text", "PingFang SC",
+          "Helvetica Neue", sans-serif;
+        font-size: 14px;
+        color: var(--text);
+        background:
+          radial-gradient(
+            560px 360px at 6% -8%,
+            var(--bg-glow),
+            transparent 60%
+          ),
+          linear-gradient(135deg, #e9edfc 0%, #efeaf9 52%, #f6ecfa 100%);
+        display: flex;
+        overflow-y: auto;
+        -webkit-font-smoothing: antialiased;
+      }
+      html.theme-dark body {
+        background:
+          radial-gradient(
+            560px 360px at 6% -8%,
+            var(--bg-glow),
+            transparent 60%
+          ),
+          linear-gradient(135deg, #111936 0%, #161337 52%, #1f1040 100%);
+      }
+
+      .page {
+        width: min(560px, 100%);
+        margin: auto;
+        padding: 46px 28px 28px;
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+      }
+
+      @keyframes rise {
+        from {
+          opacity: 0;
+          transform: translateY(10px);
+        }
+        to {
+          opacity: 1;
+          transform: none;
+        }
+      }
+      header,
+      .platforms,
+      .composer {
+        /* backwards 而非 both：入场终态与自然态一致，结束后元素脱离动画
+           合成层，后代菜单的 backdrop-filter 才能采样到页面背景（毛玻璃） */
+        animation: rise 0.4s ease backwards;
+      }
+      .platforms {
+        animation-delay: 0.05s;
+      }
+      .composer {
+        animation-delay: 0.1s;
+      }
+
+      header {
+        text-align: center;
+      }
+      .logo {
+        width: 44px;
+        height: 44px;
+        margin: 0 auto 10px;
+        border-radius: 12px;
+        background: linear-gradient(135deg, #4d6bfe, #7c5cfc);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 6px 16px rgba(93, 108, 255, 0.35);
+      }
+      h1 {
+        font-size: 24px;
+        font-weight: 700;
+        letter-spacing: 0.5px;
+      }
+      .tagline {
+        margin-top: 4px;
+        font-size: 13px;
+        color: var(--text-2);
+      }
+
+      /* ── 平台卡片 ───────────────────────────── */
+      .platforms {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+      }
+      .cell {
+        position: relative;
+      }
+      .platform {
+        width: 100%;
+        position: relative;
+        display: flex;
+        align-items: center;
+        gap: 11px;
+        padding: 12px 40px 12px 14px; /* 右侧留出 ⋯ 按钮 */
+        border: 1px solid var(--border);
+        border-radius: 14px;
+        background: var(--card);
+        box-shadow: var(--shadow);
+        cursor: pointer;
+        text-align: left;
+        font: inherit;
+        color: inherit;
+        transition:
+          transform 0.15s ease,
+          border-color 0.15s ease,
+          background 0.15s ease;
+        -webkit-tap-highlight-color: transparent;
+      }
+      .platform:hover {
+        transform: translateY(-1px);
+        background: var(--card-hover);
+      }
+      .platform:focus-visible {
+        outline: none;
+        box-shadow: 0 0 0 3px var(--ring);
+      }
+      .platform.selected {
+        border-color: var(--accent);
+      }
+      .platform[data-platform="deepseek"] {
+        --accent: #4d6bfe;
+      }
+      .platform[data-platform="chatgpt"] {
+        --accent: #10a37f;
+      }
+      .platform .check {
+        position: absolute;
+        top: -6px;
+        left: -6px;
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        background: var(--accent);
+        color: #fff;
+        display: none;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25);
+      }
+      .platform.selected .check {
+        display: flex;
+      }
+      .badge {
+        flex: none;
+        width: 34px;
+        height: 34px;
+        border-radius: 9px;
+        overflow: hidden;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .badge svg {
+        display: block;
+      }
+      .badge-ds {
+        background: linear-gradient(135deg, #4d6bfe, #3a56d8);
+        box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.12);
+      }
+      .badge-ds svg {
+        width: 20px;
+        height: 20px;
+      }
+      .badge-gpt svg {
+        width: 34px;
+        height: 34px;
+      }
+      .platform .meta {
+        min-width: 0;
+      }
+      .platform .name {
+        font-weight: 600;
+      }
+      .platform .desc {
+        font-size: 11px;
+        color: var(--text-3);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      /* ⋯ 更多按钮 */
+      .more {
+        position: absolute;
+        right: 6px;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 26px;
+        height: 26px;
+        border: none;
+        border-radius: 7px;
+        background: transparent;
+        color: var(--text-3);
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition:
+          background 0.15s ease,
+          color 0.15s ease;
+        z-index: 2;
+      }
+      .more:hover {
+        background: var(--hover);
+        color: var(--text);
+      }
+      .more:focus-visible {
+        outline: none;
+        box-shadow: 0 0 0 3px var(--ring);
+      }
+      .more.open {
+        background: var(--hover);
+        color: var(--text);
+      }
+
+      /* 下拉菜单 */
+      .menu {
+        position: absolute;
+        opacity: 0.8;
+        top: calc(100% + 6px);
+        right: 0;
+        min-width: 176px;
+        padding: 5px;
+        border: 1px solid var(--border);
+        border-radius: 11px;
+        background: var(--menu-bg);
+        -webkit-backdrop-filter: blur(22px) saturate(150%);
+        backdrop-filter: blur(22px) saturate(150%);
+        box-shadow: var(--menu-shadow);
+        z-index: 10;
+        display: none;
+        animation: menu-in 0.14s ease;
+      }
+      @keyframes menu-in {
+        from {
+          opacity: 0;
+          transform: translateY(-4px) scale(0.97);
+        }
+        to {
+          opacity: 1;
+          transform: none;
+        }
+      }
+      .menu.show {
+        display: block;
+      }
+      /* .platform 上的 --accent 传不到兄弟 .menu，悬停底色需在此重定义 */
+      #menu-deepseek {
+        --accent: #4d6bfe;
+        opacity: 0.8;
+      }
+      #menu-chatgpt {
+        --accent: #10a37f;
+      }
+      .menu-item {
+        width: 100%;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 7px 10px;
+        border: none;
+        border-radius: 7px;
+        background: transparent;
+        color: var(--text);
+        font: inherit;
+        font-size: 13px;
+        text-align: left;
+        cursor: pointer;
+        white-space: nowrap;
+      }
+      .menu-item:hover {
+        background: var(--accent);
+        color: #fff;
+      }
+      .menu-item svg {
+        flex: none;
+        opacity: 0.75;
+      }
+      .menu-item:hover svg {
+        opacity: 1;
+      }
+
+      /* ── 输入区 ─────────────────────────────── */
+      .composer {
+        border: 1px solid var(--border);
+        border-radius: 14px;
+        background: var(--card);
+        box-shadow: var(--shadow);
+        padding: 4px;
+        transition:
+          border-color 0.15s ease,
+          box-shadow 0.15s ease;
+      }
+      .composer:focus-within {
+        border-color: #4d6bfe;
+        box-shadow: 0 0 0 3px var(--ring);
+      }
+      .composer.error {
+        border-color: var(--danger);
+        animation: shake 0.4s ease;
+      }
+      @keyframes shake {
+        20% {
+          transform: translateX(-4px);
+        }
+        40% {
+          transform: translateX(4px);
+        }
+        60% {
+          transform: translateX(-3px);
+        }
+        80% {
+          transform: translateX(2px);
+        }
+      }
+      textarea {
+        width: 100%;
+        min-height: 118px;
+        max-height: 220px;
+        resize: none;
+        border: none;
+        outline: none;
+        background: transparent;
+        color: var(--text);
+        font: inherit;
+        line-height: 1.55;
+        padding: 10px 12px 4px;
+      }
+      textarea::placeholder {
+        color: var(--text-3);
+      }
+      .composer-foot {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 4px 8px 8px 12px;
+      }
+      .kbd-hint {
+        font-size: 11px;
+        color: var(--text-3);
+      }
+      .primary {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        height: 34px;
+        padding: 0 18px;
+        border: none;
+        border-radius: 9px;
+        background: linear-gradient(135deg, #4d6bfe, #7c5cfc);
+        color: #fff;
+        font: inherit;
+        font-weight: 600;
+        cursor: pointer;
+        box-shadow: 0 3px 10px rgba(93, 108, 255, 0.35);
+        transition:
+          filter 0.15s ease,
+          transform 0.1s ease;
+      }
+      .primary:hover {
+        filter: brightness(1.08);
+      }
+      .primary:active {
+        transform: scale(0.97);
+      }
+      .primary:focus-visible {
+        outline: none;
+        box-shadow: 0 0 0 3px var(--ring);
+      }
+      .primary .kbd {
+        font-size: 10px;
+        padding: 1px 5px;
+        border-radius: 4px;
+        background: rgba(255, 255, 255, 0.22);
+      }
+
+      .footnote {
+        text-align: center;
+        font-size: 11px;
+        color: var(--text-3);
+        line-height: 1.6;
+      }
+
+      /* ── 右上角设置 ─────────────────────────── */
+      .settings {
+        --accent: #4d6bfe;
+        position: fixed;
+        top: 10px;
+        right: 14px;
+        z-index: 20;
+      }
+      .icon-btn {
+        width: 30px;
+        height: 30px;
+        border: none;
+        border-radius: 8px;
+        background: transparent;
+        color: var(--text-2);
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition:
+          background 0.15s ease,
+          color 0.15s ease;
+      }
+      .icon-btn:hover,
+      .icon-btn.open {
+        background: var(--hover);
+        color: var(--text);
+      }
+      .icon-btn:focus-visible {
+        outline: none;
+        box-shadow: 0 0 0 3px var(--ring);
+      }
+      .settings .menu {
+        top: calc(100% + 8px);
+      }
+      .menu-label {
+        padding: 6px 10px 3px;
+        font-size: 11px;
+        color: var(--text-3);
+      }
+      .theme-item {
+        justify-content: space-between;
+      }
+      .theme-item .tick {
+        flex: none;
+        visibility: hidden;
+        opacity: 1;
+      }
+      .theme-item.checked .tick {
+        visibility: visible;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="settings">
+      <button
+        type="button"
+        class="icon-btn"
+        id="settingsBtn"
+        aria-label="设置"
+        title="设置"
+      >
+        <svg
+          width="16"
+          height="16"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+        >
+          <path d="M20 7h-9" />
+          <path d="M14 17H5" />
+          <circle cx="17" cy="17" r="3" />
+          <circle cx="7" cy="7" r="3" />
+        </svg>
+      </button>
+      <div class="menu" id="menu-settings">
+        <div class="menu-label">主题</div>
+        <button type="button" class="menu-item theme-item" data-theme="light">
+          浅色
+          <svg
+            class="tick"
+            width="12"
+            height="12"
+            viewBox="0 0 12 12"
+            fill="none"
+          >
+            <path
+              d="M2 6.2 4.8 9 10 3.4"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            />
+          </svg>
+        </button>
+        <button type="button" class="menu-item theme-item" data-theme="dark">
+          深色
+          <svg
+            class="tick"
+            width="12"
+            height="12"
+            viewBox="0 0 12 12"
+            fill="none"
+          >
+            <path
+              d="M2 6.2 4.8 9 10 3.4"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            />
+          </svg>
+        </button>
+        <button type="button" class="menu-item theme-item" data-theme="auto">
+          跟随系统
+          <svg
+            class="tick"
+            width="12"
+            height="12"
+            viewBox="0 0 12 12"
+            fill="none"
+          >
+            <path
+              d="M2 6.2 4.8 9 10 3.4"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            />
+          </svg>
+        </button>
+      </div>
+    </div>
+    <div class="page">
+      <header>
+        <div class="logo">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+            <path
+              d="M13.5 2 5 13.2h4.7L8.6 22l8.9-11.2h-4.9L13.5 2Z"
+              fill="#fff"
+              fill-opacity="0.95"
+            />
+          </svg>
+        </div>
+        <h1>快问</h1>
+        <p class="tagline">输入问题，一键发送到 DeepSeek 或 ChatGPT</p>
+      </header>
+
+      <section class="platforms" aria-label="选择平台">
+        <div class="cell">
+          <button
+            type="button"
+            class="platform selected"
+            data-platform="deepseek"
+          >
+            <span class="badge badge-ds">
+              <svg viewBox="0 0 24 24" role="img" aria-label="DeepSeek">
+                <path
+                  fill="#fff"
+                  d="M23.748 4.651c-.254-.124-.364.113-.512.233-.051.04-.094.09-.137.137-.372.397-.806.657-1.373.626-.829-.046-1.537.214-2.163.848-.133-.782-.575-1.248-1.247-1.548-.352-.155-.708-.311-.955-.65-.172-.24-.219-.509-.305-.774-.055-.16-.11-.323-.293-.35-.2-.031-.278.136-.356.276-.313.572-.434 1.202-.422 1.84.027 1.436.633 2.58 1.838 3.393.137.094.172.187.129.323-.082.28-.18.553-.266.833-.055.179-.137.218-.328.14a5.5 5.5 0 0 1-1.737-1.179c-.857-.828-1.631-1.743-2.597-2.46a12 12 0 0 0-.689-.47c-.985-.957.13-1.743.387-1.836.27-.098.094-.433-.778-.428-.872.003-1.67.295-2.687.685a3 3 0 0 1-.465.136 9.6 9.6 0 0 0-2.883-.101c-1.885.21-3.39 1.1-4.497 2.622C.082 8.776-.231 10.854.152 13.02c.403 2.284 1.568 4.175 3.36 5.653 1.857 1.533 3.997 2.284 6.438 2.14 1.482-.085 3.132-.284 4.994-1.86.47.234.962.328 1.78.398.629.058 1.235-.031 1.705-.129.735-.155.684-.836.418-.961-2.155-1.004-1.682-.595-2.112-.926 1.095-1.295 2.768-3.598 3.284-6.733.05-.346.115-.834.108-1.114-.004-.171.035-.238.23-.257a4.2 4.2 0 0 0 1.545-.475c1.397-.763 1.96-2.016 2.093-3.517.02-.23-.004-.467-.247-.588M11.58 18.168c-2.088-1.642-3.101-2.183-3.52-2.16-.39.024-.32.472-.234.763.09.288.207.487.371.74.114.167.192.416-.113.603-.673.416-1.842-.14-1.897-.168-1.361-.801-2.5-1.86-3.301-3.306-.775-1.393-1.225-2.888-1.299-4.482-.02-.385.094-.522.477-.592a4.7 4.7 0 0 1 1.53-.038c2.131.311 3.946 1.264 5.467 2.774.868.86 1.525 1.887 2.202 2.89.72 1.066 1.494 2.082 2.48 2.915.348.291.626.513.892.677-.802.09-2.14.109-3.055-.615zm1.001-6.44a.306.306 0 0 1 .415-.287.3.3 0 0 1 .113.074.3.3 0 0 1 .086.214c0 .17-.136.307-.308.307a.303.303 0 0 1-.306-.307m3.11 1.596c-.2.081-.4.151-.591.16a1.25 1.25 0 0 1-.798-.254c-.274-.23-.47-.358-.551-.758a1.7 1.7 0 0 1 .015-.588c.07-.327-.007-.537-.238-.727-.188-.156-.426-.199-.689-.199a.6.6 0 0 1-.254-.078.253.253 0 0 1-.114-.358 1 1 0 0 1 .192-.21c.356-.202.767-.136 1.146.016.352.144.618.408 1.001.782.392.451.462.576.685.915.176.264.336.536.446.848.066.194-.02.353-.25.45"
+                />
+              </svg>
+            </span>
+            <span class="meta">
+              <p class="name">DeepSeek</p>
+              <p class="desc">chat.deepseek.com</p>
+            </span>
+            <span class="check">
+              <svg width="11" height="11" viewBox="0 0 12 12" fill="none">
+                <path
+                  d="M2 6.2 4.8 9 10 3.4"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                />
+              </svg>
+            </span>
+          </button>
+          <button
+            type="button"
+            class="more"
+            data-platform="deepseek"
+            aria-label="更多操作"
+            title="更多操作"
+          >
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor">
+              <circle cx="8" cy="3.4" r="1.55" />
+              <circle cx="8" cy="8" r="1.55" />
+              <circle cx="8" cy="12.6" r="1.55" />
+            </svg>
+          </button>
+          <div class="menu" id="menu-deepseek">
+            <button type="button" class="menu-item" data-open="deepseek">
+              <svg width="13" height="13" viewBox="0 0 10 10" fill="none">
+                <path
+                  d="M2 8 8 2M3.5 2H8v4.5"
+                  stroke="currentColor"
+                  stroke-width="1.4"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                />
+              </svg>
+              打开 DeepSeek 登录页面
+            </button>
+          </div>
+        </div>
+
+        <div class="cell">
+          <button type="button" class="platform" data-platform="chatgpt">
+            <span class="badge badge-gpt">
+              <svg viewBox="0 0 2406 2406" role="img" aria-label="ChatGPT">
+                <path
+                  d="M1 578.4C1 259.5 259.5 1 578.4 1h1249.1c319 0 577.5 258.5 577.5 577.4V2406H578.4C259.5 2406 1 2147.5 1 1828.6V578.4z"
+                  fill="#74aa9c"
+                />
+                <path
+                  id="gpt-petal"
+                  d="M1107.3 299.1c-197.999 0-373.9 127.3-435.2 315.3L650 743.5v427.9c0 21.4 11 40.4 29.4 51.4l344.5 198.515V833.3h.1v-27.9L1372.7 604c33.715-19.52 70.44-32.857 108.47-39.828L1447.6 450.3C1361 353.5 1237.1 298.5 1107.3 299.1zm0 117.5-.6.6c79.699 0 156.3 27.5 217.6 78.4-2.5 1.2-7.4 4.3-11 6.1L952.8 709.3c-18.4 10.4-29.4 30-29.4 51.4V1248l-155.1-89.4V755.8c-.1-187.099 151.601-338.9 339-339.2z"
+                  fill="#fff"
+                />
+                <use href="#gpt-petal" transform="rotate(60 1203 1203)" />
+                <use href="#gpt-petal" transform="rotate(120 1203 1203)" />
+                <use href="#gpt-petal" transform="rotate(180 1203 1203)" />
+                <use href="#gpt-petal" transform="rotate(240 1203 1203)" />
+                <use href="#gpt-petal" transform="rotate(300 1203 1203)" />
+              </svg>
+            </span>
+            <span class="meta">
+              <p class="name">ChatGPT</p>
+              <p class="desc">chatgpt.com</p>
+            </span>
+            <span class="check">
+              <svg width="11" height="11" viewBox="0 0 12 12" fill="none">
+                <path
+                  d="M2 6.2 4.8 9 10 3.4"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                />
+              </svg>
+            </span>
+          </button>
+          <button
+            type="button"
+            class="more"
+            data-platform="chatgpt"
+            aria-label="更多操作"
+            title="更多操作"
+          >
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor">
+              <circle cx="8" cy="3.4" r="1.55" />
+              <circle cx="8" cy="8" r="1.55" />
+              <circle cx="8" cy="12.6" r="1.55" />
+            </svg>
+          </button>
+          <div class="menu" id="menu-chatgpt">
+            <button type="button" class="menu-item" data-open="chatgpt">
+              <svg width="13" height="13" viewBox="0 0 10 10" fill="none">
+                <path
+                  d="M2 8 8 2M3.5 2H8v4.5"
+                  stroke="currentColor"
+                  stroke-width="1.4"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                />
+              </svg>
+              打开 ChatGPT 登录页面
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <section class="composer" id="composer">
+        <textarea
+          id="q"
+          placeholder="输入要发送给 AI 的问题…"
+          autofocus
+          spellcheck="false"
+        ></textarea>
+        <div class="composer-foot">
+          <span class="kbd-hint">Enter 换行 · ⌘↩ 发送</span>
+          <button type="button" class="primary" id="send">
+            发送<span class="kbd">⌘↩</span>
+          </button>
+        </div>
+      </section>
+
+      <p class="footnote">登录态保存在本 App 内，与 Safari / Chrome 不共享</p>
+    </div>
+
+    <script>
+      var bridge =
+        window.webkit &&
+        window.webkit.messageHandlers &&
+        window.webkit.messageHandlers.bridge;
+      var platform = "deepseek";
+      var composer = document.getElementById("composer");
+      var input = document.getElementById("q");
+
+      /* ── 主题（light / dark / auto） ── */
+      var themePref = window.__themePref || "auto";
+      var darkMQ = window.matchMedia("(prefers-color-scheme: dark)");
+
+      function applyTheme() {
+        var dark =
+          themePref === "dark" || (themePref === "auto" && darkMQ.matches);
+        document.documentElement.classList.toggle("theme-dark", dark);
+        document.querySelectorAll(".theme-item").forEach(function (btn) {
+          btn.classList.toggle("checked", btn.dataset.theme === themePref);
+        });
+        if (bridge) bridge.postMessage({ name: "themeApplied", dark: dark });
+      }
+      applyTheme();
+      darkMQ.addEventListener("change", function () {
+        if (themePref === "auto") applyTheme();
+      });
+      document.querySelectorAll(".theme-item").forEach(function (btn) {
+        btn.addEventListener("click", function (e) {
+          e.stopPropagation();
+          themePref = btn.dataset.theme;
+          closeMenus();
+          applyTheme();
+          if (bridge)
+            bridge.postMessage({ name: "setTheme", value: themePref });
+        });
+      });
+
+      document
+        .getElementById("settingsBtn")
+        .addEventListener("click", function (e) {
+          e.stopPropagation();
+          var menu = document.getElementById("menu-settings");
+          var btn = this;
+          var wasOpen = menu.classList.contains("show");
+          closeMenus();
+          if (!wasOpen) {
+            menu.classList.add("show");
+            btn.classList.add("open");
+          }
+        });
+
+      document.querySelectorAll(".platform").forEach(function (btn) {
+        btn.addEventListener("click", function () {
+          closeMenus();
+          select(btn.dataset.platform);
+        });
+      });
+
+      function select(name) {
+        platform = name;
+        document.querySelectorAll(".platform").forEach(function (btn) {
+          btn.classList.toggle("selected", btn.dataset.platform === name);
+        });
+      }
+
+      /* ⋯ / 设置 下拉菜单 */
+      function closeMenus() {
+        document.querySelectorAll(".menu.show").forEach(function (m) {
+          m.classList.remove("show");
+        });
+        document
+          .querySelectorAll(".more.open, .icon-btn.open")
+          .forEach(function (b) {
+            b.classList.remove("open");
+          });
+      }
+
+      document.querySelectorAll(".more").forEach(function (btn) {
+        btn.addEventListener("click", function (e) {
+          e.stopPropagation();
+          var menu = document.getElementById("menu-" + btn.dataset.platform);
+          var wasOpen = menu.classList.contains("show");
+          closeMenus();
+          if (!wasOpen) {
+            menu.classList.add("show");
+            btn.classList.add("open");
+          }
+        });
+      });
+
+      document
+        .querySelectorAll(".menu-item[data-open]")
+        .forEach(function (btn) {
+          btn.addEventListener("click", function (e) {
+            e.stopPropagation();
+            closeMenus();
+            if (bridge)
+              bridge.postMessage({
+                name: "openPlatform",
+                platform: btn.dataset.open,
+              });
+          });
+        });
+
+      document.addEventListener("click", closeMenus);
+      window.addEventListener("keydown", function (e) {
+        if (e.key === "Escape") closeMenus();
+        if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
+          e.preventDefault();
+          submit();
+        }
+      });
+
+      function submit() {
+        var message = input.value.trim();
+        if (!message) {
+          composer.classList.remove("error");
+          void composer.offsetWidth; // 重置动画
+          composer.classList.add("error");
+          input.focus();
+          return;
+        }
+        if (bridge)
+          bridge.postMessage({
+            name: "submit",
+            platform: platform,
+            message: message,
+          });
+      }
+
+      document.getElementById("send").addEventListener("click", submit);
+
+      // WKWebView 首次加载后 autofocus 不一定生效，Swift 端会在加载完成时调用
+      window.__focusInput = function () {
+        input.focus();
+      };
+    </script>
+  </body>
+</html>
