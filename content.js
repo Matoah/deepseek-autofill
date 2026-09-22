@@ -181,31 +181,72 @@ async function autoSendQuestionInDeepseek(queryValue) {
 }
 
 async function autoSendQuestionInChatGPT(queryValue) {
-  const divElement = await waitForElement("div[contenteditable='true']");
-  if (divElement) {
-    // 设置值并触发事件
-    divElement.innerText = queryValue;
-    //divElement.dispatchEvent(new Event("input", { bubbles: true }));
-    //divElement.dispatchEvent(new Event("change", { bubbles: true }));
-    // 获取光标
-    const range = document.createRange();
-    range.selectNodeContents(divElement);
-    range.collapse(false);
-    const selection = window.getSelection();
-    selection.removeAllRanges();
-    selection.addRange(range);
-    setTimeout(() => {
-      // 触发 divElement 的 Enter 键按下事件
-      divElement.dispatchEvent(
-        new KeyboardEvent("keydown", {
-          key: "Enter",
-          code: "Enter",
-          bubbles: true,
-          cancelable: true,
-        }),
-      );
-    }, 100);
+  console.log("[autofill] ChatGPT流程开始，queryValue:", queryValue);
+
+  // 1. 等待输入框加载完成（ProseMirror富文本编辑器，contenteditable div）
+  const editor = await waitForElement(
+    "#prompt-textarea, div[contenteditable='true']",
+  );
+  console.log("[autofill] 找到输入框，id:", editor.id, "，class:", editor.className);
+
+  // 2. 聚焦输入框并把光标移到末尾
+  editor.focus();
+  const range = document.createRange();
+  range.selectNodeContents(editor);
+  range.collapse(false);
+  const selection = window.getSelection();
+  selection.removeAllRanges();
+  selection.addRange(range);
+
+  // 3. 通过execCommand插入文本。
+  // ChatGPT输入框是ProseMirror编辑器，直接改innerText只改DOM不产生input事件，
+  // 编辑器内部state不更新、发送按钮不会启用；execCommand('insertText')走浏览器
+  // 原生输入管线，触发beforeinput/input事件，与真实键入一致。
+  // 先selectAll再插入，覆盖ChatGPT恢复的草稿或原生?q=预填，保证内容就是q
+  document.execCommand("selectAll", false, null);
+  const inserted = document.execCommand("insertText", false, queryValue);
+  console.log(
+    "[autofill] execCommand insertText返回:",
+    inserted,
+    "，当前输入框文本:",
+    JSON.stringify(editor.textContent),
+  );
+
+  // 4. 等待发送按钮出现并启用后点击。输入框有内容时才会渲染send-button
+  // （为空时该位置是语音按钮），按钮出现也意味着编辑器state已更新
+  const button = await waitForElement(
+    "button[data-testid='send-button']:not([disabled])",
+  );
+  console.log(
+    "[autofill] 发送按钮已启用，outerHTML:",
+    button.outerHTML.substring(0, 300),
+  );
+  button.click();
+  console.log("[autofill] 已点击发送按钮");
+
+  // 5. 1秒后检查发送效果：成功时输入框会被清空；未清空则派发Enter键兜底
+  await new Promise((resolve) => setTimeout(resolve, 1000));
+  if (!editor.textContent.trim()) {
+    console.log("[autofill] 发送成功，输入框已清空");
+    return;
   }
+  console.warn(
+    "[autofill] 点击后输入框未清空，派发Enter键兜底，剩余文本:",
+    JSON.stringify(editor.textContent),
+  );
+  editor.dispatchEvent(
+    new KeyboardEvent("keydown", {
+      key: "Enter",
+      code: "Enter",
+      bubbles: true,
+      cancelable: true,
+    }),
+  );
+  await new Promise((resolve) => setTimeout(resolve, 1000));
+  console.log(
+    "[autofill] Enter兜底后输入框文本:",
+    JSON.stringify(editor.textContent),
+  );
 }
 
 // 跳过原因只打印一次，避免MutationObserver高频触发导致刷屏
@@ -321,8 +362,12 @@ function init() {
   }
 }
 
+// Safari 的扩展API以 browser 命名空间为主（16.4 起也提供 chrome），
+// Chrome/Edge 只有 chrome。统一取可用的那个，保持双浏览器兼容
+const ext = typeof browser !== "undefined" ? browser : chrome;
+
 // 监听来自popup或background的消息
-chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+ext.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.action === "executeAutoFill") {
     console.log("[autofill] 收到executeAutoFill消息");
     autoFillPage();
