@@ -1,0 +1,180 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>bundleid</key>
+	<string>top.matoah.ai.autofill</string>
+	<key>connections</key>
+	<dict>
+		<key>0F6DEB1B-2C47-4414-9C2F-E44C10C54E16</key>
+		<array>
+			<dict>
+				<key>destinationuid</key>
+				<string>53FCFE30-00ED-47C4-870D-CE80292258A3</string>
+				<key>modifiers</key>
+				<integer>0</integer>
+				<key>modifiersubtext</key>
+				<string></string>
+				<key>vitoclose</key>
+				<false/>
+			</dict>
+		</array>
+		<key>D4992D88-63E3-46DE-B67B-E5A1B163ED36</key>
+		<array>
+			<dict>
+				<key>destinationuid</key>
+				<string>8C84B04A-9D29-406D-AB3B-6CA8F9A21D59</string>
+				<key>modifiers</key>
+				<integer>0</integer>
+				<key>modifiersubtext</key>
+				<string></string>
+				<key>vitoclose</key>
+				<false/>
+			</dict>
+		</array>
+	</dict>
+	<key>createdby</key>
+	<string>matoah</string>
+	<key>description</key>
+	<string>输入 ds/gpt + 问题，打开快问 App 自动填充并发送给 DeepSeek / ChatGPT</string>
+	<key>disabled</key>
+	<false/>
+	<key>name</key>
+	<string>快问</string>
+	<key>objects</key>
+	<array>
+		<dict>
+			<key>config</key>
+			<dict>
+				<key>argumenttype</key>
+				<integer>0</integer>
+				<key>keyword</key>
+				<string>ds</string>
+				<key>subtext</key>
+				<string>回车后打开快问 App，自动填充并发送给 DeepSeek</string>
+				<key>text</key>
+				<string>快问 DeepSeek：{query}</string>
+				<key>withspace</key>
+				<true/>
+			</dict>
+			<key>type</key>
+			<string>alfred.workflow.input.keyword</string>
+			<key>uid</key>
+			<string>0F6DEB1B-2C47-4414-9C2F-E44C10C54E16</string>
+			<key>version</key>
+			<integer>1</integer>
+		</dict>
+		<dict>
+			<key>config</key>
+			<dict>
+				<key>browser</key>
+				<string></string>
+				<key>skipqueryencode</key>
+				<integer>0</integer>
+				<key>skipvarencode</key>
+				<integer>0</integer>
+				<key>spaces</key>
+				<string></string>
+				<key>url</key>
+				<string>aiautofill://send?platform=ds&amp;q={query}</string>
+			</dict>
+			<key>type</key>
+			<string>alfred.workflow.action.openurl</string>
+			<key>uid</key>
+			<string>53FCFE30-00ED-47C4-870D-CE80292258A3</string>
+			<key>version</key>
+			<integer>1</integer>
+		</dict>
+		<dict>
+			<key>config</key>
+			<dict>
+				<key>argumenttype</key>
+				<integer>0</integer>
+				<key>keyword</key>
+				<string>gpt</string>
+				<key>subtext</key>
+				<string>回车后打开快问 App，自动填充并发送给 ChatGPT</string>
+				<key>text</key>
+				<string>快问 ChatGPT：{query}</string>
+				<key>withspace</key>
+				<true/>
+			</dict>
+			<key>type</key>
+			<string>alfred.workflow.input.keyword</string>
+			<key>uid</key>
+			<string>D4992D88-63E3-46DE-B67B-E5A1B163ED36</string>
+			<key>version</key>
+			<integer>1</integer>
+		</dict>
+		<dict>
+			<key>config</key>
+			<dict>
+				<key>browser</key>
+				<string></string>
+				<key>skipqueryencode</key>
+				<integer>0</integer>
+				<key>skipvarencode</key>
+				<integer>0</integer>
+				<key>spaces</key>
+				<string></string>
+				<key>url</key>
+				<string>aiautofill://send?platform=chatgpt&amp;q={query}</string>
+			</dict>
+			<key>type</key>
+			<string>alfred.workflow.action.openurl</string>
+			<key>uid</key>
+			<string>8C84B04A-9D29-406D-AB3B-6CA8F9A21D59</string>
+			<key>version</key>
+			<integer>1</integer>
+		</dict>
+	</array>
+	<key>readme</key>
+	<string>用法：呼出 Alfred，输入 ds + 空格 + 问题（或 gpt + 空格 + 问题），回车。
+
+例如：ds macmini m4建议升级到macos27吗？
+
+Alfred 会打开 aiautofill://send?platform=ds&amp;q=...（{query} 自动 URL 编码），
+快问 App 接收后新开窗口自动填充并发送。
+
+仓库：deepseek-autofill（macos-app/）</string>
+	<key>uidata</key>
+	<dict>
+		<key>0F6DEB1B-2C47-4414-9C2F-E44C10C54E16</key>
+		<dict>
+			<key>xpos</key>
+			<real>355</real>
+			<key>ypos</key>
+			<real>215</real>
+		</dict>
+		<key>53FCFE30-00ED-47C4-870D-CE80292258A3</key>
+		<dict>
+			<key>xpos</key>
+			<real>515</real>
+			<key>ypos</key>
+			<real>215</real>
+		</dict>
+		<key>D4992D88-63E3-46DE-B67B-E5A1B163ED36</key>
+		<dict>
+			<key>xpos</key>
+			<real>355</real>
+			<key>ypos</key>
+			<real>335</real>
+		</dict>
+		<key>8C84B04A-9D29-406D-AB3B-6CA8F9A21D59</key>
+		<dict>
+			<key>xpos</key>
+			<real>515</real>
+			<key>ypos</key>
+			<real>335</real>
+		</dict>
+	</dict>
+	<key>userconfigurationconfig</key>
+	<array/>
+	<key>variablesdontexport</key>
+	<array/>
+	<key>version</key>
+	<string>1.1.0</string>
+	<key>webaddress</key>
+	<string>www.matoah.top</string>
+</dict>
+</plist>
