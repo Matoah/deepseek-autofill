@@ -1,6 +1,6 @@
 # 快问（macOS App 版）
 
-**快问**（英文名 AI Autofill）：把仓库根目录的浏览器扩展（DeepSeek / ChatGPT 自动填充发送）
+**快问**（英文名 AI Autofill）：把仓库根目录的浏览器扩展（DeepSeek / ChatGPT / 千问自动填充发送）
 封装成独立 macOS App：内嵌 WKWebView 打开 AI 平台页面，注入**同一份** `content.js`
 完成自动填充与发送，窗口内直接查看 AI 回复。
 
@@ -34,7 +34,7 @@ swift make-icon.swift && ./build.sh
 ### 首次使用：登录
 
 登录态保存在 App 自己的 WKWebView 数据存储中，**与 Safari / Chrome 不共享**。
-无参数启动 App（显示主页），点"打开 DeepSeek / 打开 ChatGPT"，在弹出的窗口中完成登录，
+无参数启动 App（显示主页），点"打开 DeepSeek / 打开 ChatGPT / 打开千问"，在弹出的窗口中完成登录，
 之后跨启动保持登录。
 
 ### 发送问题（三种方式）
@@ -44,7 +44,7 @@ swift make-icon.swift && ./build.sh
 2. **命令行参数**（仅进程首次启动时有效；App 已在运行时 `open --args` 不会传入参数）：
    ```bash
    open "macos-app/build/快问.app" --args --platform deepseek --message "你的问题"
-   # 支持 --platform=deepseek / -p / -m 等简写；platform 别名：deepseek/ds、chatgpt/gpt/openai
+   # 支持 --platform=deepseek / -p / -m 等简写；platform 别名：deepseek/ds、chatgpt/gpt/openai、qianwen/qwen/qw
    ```
 
 3. **URL scheme**（推荐，Alfred / 脚本集成用这个，App 是否在运行都有效）：
@@ -66,12 +66,14 @@ swift make-icon.swift && ./build.sh
   ds macmini m4建议升级到macos27吗?
   ```
 - `gpt` + 空格 + 问题 → 同上，发送给 ChatGPT
+- `qw` + 空格 + 问题 → 同上，发送给千问（阿里 Qwen）
 
-结构：Keyword 输入（`ds` / `gpt`，带参数）→ **Open URL** 动作：
+结构：Keyword 输入（`ds` / `gpt` / `qw`，带参数）→ **Open URL** 动作：
 
 ```text
 aiautofill://send?platform=ds&q={query}
 aiautofill://send?platform=chatgpt&q={query}
+aiautofill://send?platform=qianwen&q={query}
 ```
 
 Open URL 动作默认对 `{query}` 做 URL 编码（`skipqueryencode=0`），中文、空格、
@@ -88,7 +90,7 @@ Open URL 动作默认对 `{query}` 做 URL 编码（`skipqueryencode=0`），中
 | `AutofillShim.js` | 先于 content.js 注入，为 `browser` / `chrome` 扩展命名空间补空实现（WKWebView 无扩展运行时） |
 | `background.js` / `popup/` / `manifest.json` | 不使用（标签监听、开关配置等职责由 App 自身承担） |
 
-两个 AI 平台改版导致选择器失效时，直接修根目录 `content.js` 后重新 `./build.sh`，
+AI 平台改版导致选择器失效时，直接修根目录 `content.js` 后重新 `./build.sh`，
 Chrome / Safari / App 三端同时生效。
 
 ## 常见问题

@@ -3,20 +3,28 @@ import Foundation
 enum Platform: String, CaseIterable {
     case deepseek
     case chatgpt
+    case qianwen
 
     var displayName: String {
-        self == .deepseek ? "DeepSeek" : "ChatGPT"
+        switch self {
+        case .deepseek: return "DeepSeek"
+        case .chatgpt: return "ChatGPT"
+        case .qianwen: return "千问"
+        }
     }
 
     var baseURL: URL {
         switch self {
         case .deepseek: return URL(string: "https://chat.deepseek.com/")!
         case .chatgpt: return URL(string: "https://chatgpt.com/")!
+        case .qianwen: return URL(string: "https://www.qianwen.com/chat")!
         }
     }
 
     /// 目标地址。带 query 时附加 ?q= 参数：content.js 会在 document_start
-    /// 阶段把它缓存进 sessionStorage，再驱动页面填充与发送
+    /// 阶段把它缓存进 sessionStorage，再驱动页面填充与发送。
+    /// 千问比较特殊：页面原生支持 ?q= 自动发送（未登录的匿名会话也可发送），
+    /// content.js 仅在原生发送未生效时才走脚本兜底
     func url(query: String?) -> URL {
         guard let query, !query.isEmpty else {
             return baseURL
@@ -32,6 +40,8 @@ enum Platform: String, CaseIterable {
             return .deepseek
         case "chatgpt", "gpt", "openai":
             return .chatgpt
+        case "qianwen", "qwen", "qw":
+            return .qianwen
         default:
             return nil
         }

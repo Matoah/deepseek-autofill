@@ -249,6 +249,129 @@ async function autoSendQuestionInChatGPT(queryValue) {
   );
 }
 
+/**
+ * 千问（www.qianwen.com）的输入框是 Slate 编辑器（DOM 带 data-slate-* 属性），
+ * 从可编辑元素的 React fiber 上沿祖先链，在 hook 状态里找 Slate editor 实例
+ * @returns {Object|null} Slate editor 对象
+ */
+function findSlateEditor() {
+  const editable = document.querySelector(
+    "div[role='textbox'][contenteditable='true']",
+  );
+  if (!editable) return null;
+
+  const fiberKey = Object.keys(editable).find((k) =>
+    k.startsWith("__reactFiber$"),
+  );
+  if (!fiberKey) return null;
+
+  const seen = new Set();
+  let fiber = editable[fiberKey];
+  for (let depth = 0; depth < 40 && fiber && !seen.has(fiber); depth++) {
+    seen.add(fiber);
+    // Slate editor 常被父组件放在 useState/useRef 的 hook 链里
+    let hook = fiber.memoizedState;
+    for (let i = 0; i < 30 && hook; i++) {
+      const value = hook.memoizedState;
+      if (
+        value &&
+        typeof value === "object" &&
+        typeof value.insertText === "function" &&
+        typeof value.isInline === "function"
+      ) {
+        return value;
+      }
+      hook = hook.next;
+    }
+    fiber = fiber.return;
+  }
+  return null;
+}
+
+/**
+ * 千问兜底流程：页面未原生发送时，直接写 Slate model 并点击发送按钮。
+ * 注意：直接改 DOM（execCommand insertText / 合成 paste / 合成 beforeinput）
+ * 均无法更新 Slate 内部 state（发送按钮不会启用），必须走 editor.insertText；
+ * 且受控组件在 React 事件循环外改动需手动触发 onChange 才会重渲染
+ */
+async function autoSendQuestionInQianwen(queryValue) {
+  console.log("[autofill] 千问兜底流程开始，queryValue:", queryValue);
+
+  const editor = findSlateEditor();
+  if (!editor) {
+    throw new Error("未找到 Slate editor 实例（React fiber 结构可能已变化）");
+  }
+
+  // selection 为普通可序列化对象，可直接构造。
+  // 空编辑器时选区落在开头；有草稿时构造覆盖全文的选区，
+  // insertText 会替换选区内容（与 ChatGPT 流程的 selectAll 语义一致）
+  let selection = {
+    anchor: { path: [0, 0], offset: 0 },
+    focus: { path: [0, 0], offset: 0 },
+  };
+  const lastBlock = editor.children[editor.children.length - 1];
+  if (lastBlock && lastBlock.children && lastBlock.children.length) {
+    const textIndex = lastBlock.children.length - 1;
+    const lastText = lastBlock.children[textIndex];
+    selection = {
+      anchor: { path: [0, 0], offset: 0 },
+      focus: {
+        path: [editor.children.length - 1, textIndex],
+        offset: typeof lastText.text === "string" ? lastText.text.length : 0,
+      },
+    };
+  }
+  editor.selection = selection;
+  editor.insertText(queryValue);
+  editor.onChange();
+  console.log(
+    "[autofill] 已写入 Slate model，当前children:",
+    JSON.stringify(editor.children).substring(0, 200),
+  );
+
+  // 等待发送按钮启用后点击
+  const button = await waitForElement(
+    "button[aria-label='发送消息']:not([disabled])",
+  );
+  console.log(
+    "[autofill] 发送按钮已启用，outerHTML:",
+    button.outerHTML.substring(0, 300),
+  );
+  button.click();
+  console.log("[autofill] 已点击发送按钮");
+}
+
+/**
+ * 千问流程入口：优先依赖页面原生行为。
+ * 千问原生支持 ?q= 参数——带参打开 /chat 会直接把 q 作为消息自动发送
+ * （未登录的匿名会话也可发送），随后跳转到 /chat/<会话ID>。
+ * 此处等待确认原生发送已发生；若超时则走脚本兜底
+ * @returns {Promise<boolean>} 是否由原生完成发送
+ */
+async function waitQianwenNativeSend(queryValue, timeout = 8000) {
+  const startTime = Date.now();
+
+  function nativeSent() {
+    // 原生发送后 URL 跳转到 /chat/<32位hex> 且输入框无内容
+    if (!/^\/chat\/[0-9a-f]{16,}$/i.test(location.pathname)) return false;
+    const editable = document.querySelector(
+      "div[role='textbox'][contenteditable='true']",
+    );
+    if (editable && editable.textContent.trim()) return false;
+    return true;
+  }
+
+  while (Date.now() - startTime < timeout) {
+    if (nativeSent()) {
+      console.log("[autofill] 千问原生已发送，URL:", location.href);
+      return true;
+    }
+    await new Promise((resolve) => setTimeout(resolve, 200));
+  }
+  console.warn("[autofill] 千问原生发送未在", timeout, "ms内确认，走脚本兜底");
+  return false;
+}
+
 // 跳过原因只打印一次，避免MutationObserver高频触发导致刷屏
 const skipLogShown = {};
 function logSkipOnce(reason) {
@@ -292,8 +415,13 @@ async function autoFillPage() {
         await autoSendQuestionInDeepseek(queryValue);
       } else if (window.location.hostname === "chatgpt.com") {
         await autoSendQuestionInChatGPT(queryValue);
+      } else if (window.location.hostname === "www.qianwen.com") {
+        // 千问优先靠页面原生 ?q= 自动发送，未生效再走脚本兜底
+        if (!(await waitQianwenNativeSend(queryValue))) {
+          await autoSendQuestionInQianwen(queryValue);
+        }
       } else {
-        console.warn("当前页面不是Deepseek或ChatGPT");
+        console.warn("当前页面不是Deepseek、ChatGPT或千问");
         return;
       }
       // 发送流程走完，标记已发送并清除缓存
@@ -347,7 +475,8 @@ function init() {
   // 检查当前URL是否符合条件
   if (
     window.location.hostname === "chat.deepseek.com" ||
-    window.location.hostname === "chatgpt.com"
+    window.location.hostname === "chatgpt.com" ||
+    window.location.hostname === "www.qianwen.com"
   ) {
     // content script在document_start阶段注入，等待DOM就绪后再执行填充和监听
     if (document.readyState === "loading") {

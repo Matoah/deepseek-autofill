@@ -1,6 +1,6 @@
 # AI 平台数据自动发送器
 
-自动从 URL 参数中提取值，填充到 DeepSeek / ChatGPT 页面表单并发送，主要对接 Alfred。
+自动从 URL 参数中提取值，填充到 DeepSeek / ChatGPT / 千问页面表单并发送，主要对接 Alfred。
 
 访问 `chat.deepseek.com/?q=你的问题` 时，插件会自动把 `q` 参数的值填入输入框并点击发送。
 同时兼容 **Chrome** 与 **Safari**。
@@ -37,7 +37,7 @@ Safari 无法直接加载扩展文件夹，需要先用 Apple 官方工具把扩
 ### 在 Safari 中启用
 
 1. 运行应用后，打开 Safari → 设置 → 扩展，勾选「AI Autofill」
-2. 在扩展详情中授予 `chat.deepseek.com`、`chatgpt.com` 的网站访问权限
+2. 在扩展详情中授予 `chat.deepseek.com`、`chatgpt.com`、`www.qianwen.com` 的网站访问权限
 3. ad-hoc 构建属于"未签名扩展"，需先开启：Safari → 设置 → 高级 →
    勾选「显示针对网页开发者的功能」，然后菜单栏 开发 → 「允许未签名扩展」
    （用 Xcode + 开发者账号构建则不需要此步）

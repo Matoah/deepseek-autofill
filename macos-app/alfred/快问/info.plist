@@ -6,6 +6,19 @@
 	<string>top.matoah.ai.autofill</string>
 	<key>connections</key>
 	<dict>
+		<key>09cce4aa-9f87-4799-a87c-a1e8729bc88e</key>
+		<array>
+			<dict>
+				<key>destinationuid</key>
+				<string>2ab5db0a-083f-4e7c-aad4-804b0a3e1ab0</string>
+				<key>modifiers</key>
+				<integer>0</integer>
+				<key>modifiersubtext</key>
+				<string></string>
+				<key>vitoclose</key>
+				<false/>
+			</dict>
+		</array>
 		<key>0F6DEB1B-2C47-4414-9C2F-E44C10C54E16</key>
 		<array>
 			<dict>
@@ -36,7 +49,7 @@
 	<key>createdby</key>
 	<string>matoah</string>
 	<key>description</key>
-	<string>输入 ds/gpt + 问题，打开快问 App 自动填充并发送给 DeepSeek / ChatGPT</string>
+	<string>输入 ds/gpt/qw + 问题，打开快问 App 自动填充并发送给 DeepSeek / ChatGPT / 千问</string>
 	<key>disabled</key>
 	<false/>
 	<key>name</key>
@@ -127,11 +140,53 @@
 			<key>version</key>
 			<integer>1</integer>
 		</dict>
+		<dict>
+			<key>config</key>
+			<dict>
+				<key>argumenttype</key>
+				<integer>0</integer>
+				<key>keyword</key>
+				<string>qw</string>
+				<key>subtext</key>
+				<string>回车后打开快问 App，自动填充并发送给千问</string>
+				<key>text</key>
+				<string>快问千问：{query}</string>
+				<key>withspace</key>
+				<true/>
+			</dict>
+			<key>type</key>
+			<string>alfred.workflow.input.keyword</string>
+			<key>uid</key>
+			<string>09cce4aa-9f87-4799-a87c-a1e8729bc88e</string>
+			<key>version</key>
+			<integer>1</integer>
+		</dict>
+		<dict>
+			<key>config</key>
+			<dict>
+				<key>browser</key>
+				<string></string>
+				<key>skipqueryencode</key>
+				<integer>0</integer>
+				<key>skipvarencode</key>
+				<integer>0</integer>
+				<key>spaces</key>
+				<string></string>
+				<key>url</key>
+				<string>aiautofill://send?platform=qianwen&amp;q={query}</string>
+			</dict>
+			<key>type</key>
+			<string>alfred.workflow.action.openurl</string>
+			<key>uid</key>
+			<string>2ab5db0a-083f-4e7c-aad4-804b0a3e1ab0</string>
+			<key>version</key>
+			<integer>1</integer>
+		</dict>
 	</array>
 	<key>readme</key>
-	<string>用法：呼出 Alfred，输入 ds + 空格 + 问题（或 gpt + 空格 + 问题），回车。
+	<string>用法：呼出 Alfred，输入 ds / gpt / qw + 空格 + 问题，回车。
 
-例如：ds macmini m4建议升级到macos27吗？
+例如：ds macmini m4建议升级到macos27吗？　或　qw 帮我写一段Python快排
 
 Alfred 会打开 aiautofill://send?platform=ds&amp;q=...（{query} 自动 URL 编码），
 快问 App 接收后新开窗口自动填充并发送。
@@ -139,12 +194,26 @@ Alfred 会打开 aiautofill://send?platform=ds&amp;q=...（{query} 自动 URL �
 仓库：deepseek-autofill（macos-app/）</string>
 	<key>uidata</key>
 	<dict>
+		<key>09cce4aa-9f87-4799-a87c-a1e8729bc88e</key>
+		<dict>
+			<key>xpos</key>
+			<real>355</real>
+			<key>ypos</key>
+			<real>455</real>
+		</dict>
 		<key>0F6DEB1B-2C47-4414-9C2F-E44C10C54E16</key>
 		<dict>
 			<key>xpos</key>
 			<real>355</real>
 			<key>ypos</key>
 			<real>215</real>
+		</dict>
+		<key>2ab5db0a-083f-4e7c-aad4-804b0a3e1ab0</key>
+		<dict>
+			<key>xpos</key>
+			<real>515</real>
+			<key>ypos</key>
+			<real>455</real>
 		</dict>
 		<key>53FCFE30-00ED-47C4-870D-CE80292258A3</key>
 		<dict>
@@ -153,17 +222,17 @@ Alfred 会打开 aiautofill://send?platform=ds&amp;q=...（{query} 自动 URL �
 			<key>ypos</key>
 			<real>215</real>
 		</dict>
-		<key>D4992D88-63E3-46DE-B67B-E5A1B163ED36</key>
-		<dict>
-			<key>xpos</key>
-			<real>355</real>
-			<key>ypos</key>
-			<real>335</real>
-		</dict>
 		<key>8C84B04A-9D29-406D-AB3B-6CA8F9A21D59</key>
 		<dict>
 			<key>xpos</key>
 			<real>515</real>
+			<key>ypos</key>
+			<real>335</real>
+		</dict>
+		<key>D4992D88-63E3-46DE-B67B-E5A1B163ED36</key>
+		<dict>
+			<key>xpos</key>
+			<real>355</real>
 			<key>ypos</key>
 			<real>335</real>
 		</dict>
@@ -173,7 +242,7 @@ Alfred 会打开 aiautofill://send?platform=ds&amp;q=...（{query} 自动 URL �
 	<key>variablesdontexport</key>
 	<array/>
 	<key>version</key>
-	<string>1.1.0</string>
+	<string>1.2.0</string>
 	<key>webaddress</key>
 	<string>www.matoah.top</string>
 </dict>

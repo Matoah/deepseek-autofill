@@ -153,7 +153,7 @@
       /* ── 平台卡片 ───────────────────────────── */
       .platforms {
         display: grid;
-        grid-template-columns: 1fr 1fr;
+        grid-template-columns: 1fr 1fr 1fr;
         gap: 12px;
       }
       .cell {
@@ -197,6 +197,9 @@
       .platform[data-platform="chatgpt"] {
         --accent: #10a37f;
       }
+      .platform[data-platform="qianwen"] {
+        --accent: #6454f1;
+      }
       .platform .check {
         position: absolute;
         top: -6px;
@@ -238,6 +241,12 @@
       .badge-gpt svg {
         width: 34px;
         height: 34px;
+      }
+      .badge-qwen img {
+        display: block;
+        width: 34px;
+        height: 34px;
+        border-radius: 9px;
       }
       .platform .meta {
         min-width: 0;
@@ -325,6 +334,9 @@
       }
       #menu-chatgpt {
         --accent: #10a37f;
+      }
+      #menu-qianwen {
+        --accent: #6454f1;
       }
       .menu-item {
         width: 100%;
@@ -602,7 +614,7 @@
           </svg>
         </div>
         <h1>快问</h1>
-        <p class="tagline">输入问题，一键发送到 DeepSeek 或 ChatGPT</p>
+        <p class="tagline">输入问题，一键发送到 DeepSeek、ChatGPT 或千问</p>
       </header>
 
       <section class="platforms" aria-label="选择平台">
@@ -729,6 +741,60 @@
             </button>
           </div>
         </div>
+
+        <div class="cell">
+          <button type="button" class="platform" data-platform="qianwen">
+            <span class="badge badge-qwen">
+              <img
+                src="data:image/png;base64,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"
+                alt="千问"
+                draggable="false"
+              />
+            </span>
+            <span class="meta">
+              <p class="name">千问</p>
+              <p class="desc">www.qianwen.com</p>
+            </span>
+            <span class="check">
+              <svg width="11" height="11" viewBox="0 0 12 12" fill="none">
+                <path
+                  d="M2 6.2 4.8 9 10 3.4"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                />
+              </svg>
+            </span>
+          </button>
+          <button
+            type="button"
+            class="more"
+            data-platform="qianwen"
+            aria-label="更多操作"
+            title="更多操作"
+          >
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor">
+              <circle cx="8" cy="3.4" r="1.55" />
+              <circle cx="8" cy="8" r="1.55" />
+              <circle cx="8" cy="12.6" r="1.55" />
+            </svg>
+          </button>
+          <div class="menu" id="menu-qianwen">
+            <button type="button" class="menu-item" data-open="qianwen">
+              <svg width="13" height="13" viewBox="0 0 10 10" fill="none">
+                <path
+                  d="M2 8 8 2M3.5 2H8v4.5"
+                  stroke="currentColor"
+                  stroke-width="1.4"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                />
+              </svg>
+              打开千问登录页面
+            </button>
+          </div>
+        </div>
       </section>
 
       <section class="composer" id="composer">
@@ -800,6 +866,10 @@
           }
         });
 
+      document.getElementById("q").addEventListener("focus", function (e) {
+        e.target.select();
+      });
+
       document.querySelectorAll(".platform").forEach(function (btn) {
         btn.addEventListener("click", function () {
           closeMenus();
@@ -811,6 +881,20 @@
         platform = name;
         document.querySelectorAll(".platform").forEach(function (btn) {
           btn.classList.toggle("selected", btn.dataset.platform === name);
+        });
+        setTip(name);
+      }
+
+      var platformNames = {
+        deepseek: "DeepSeek",
+        chatgpt: "ChatGPT",
+        qianwen: "千问",
+      };
+
+      function setTip(name) {
+        document.querySelectorAll(".tagline").forEach(function (el) {
+          el.innerHTML =
+            "输入问题，一键发送到 " + (platformNames[name] || name);
         });
       }
 
@@ -881,6 +965,7 @@
 
       document.getElementById("send").addEventListener("click", submit);
 
+      setTip(platform);
       // WKWebView 首次加载后 autofocus 不一定生效，Swift 端会在加载完成时调用
       window.__focusInput = function () {
         input.focus();
